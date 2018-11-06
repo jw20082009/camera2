@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
@@ -397,6 +398,17 @@ public class CameraView extends AutoFitTextureView {
             mState = STATE_OPENED;
             mCameraDevice = cameraDevice;
             mCameraOpenCloseLock.release();
+            post(new Runnable() {
+                @Override
+                public void run() {
+                    int orientation = getResources().getConfiguration().orientation;
+                    if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                        setAspectRatio(mPreviewSize.getWidth(), mPreviewSize.getHeight());
+                    } else {
+                        setAspectRatio(mPreviewSize.getHeight(), mPreviewSize.getWidth());
+                    }
+                }
+            });
             startPreview();
         }
 
