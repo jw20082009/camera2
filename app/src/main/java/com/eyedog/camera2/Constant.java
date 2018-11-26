@@ -7,4 +7,8 @@ public class Constant {
 
     public static final int PREVIEW_WIDTH = 1080;
     public static final int PREVIEW_HEIGHT = 1920;
+
+    public static final int OUT_HEIGHT = 720;
+
+    public static final int OUT_WIDTH = 1280;
 }
