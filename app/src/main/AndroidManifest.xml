@@ -26,6 +26,10 @@
         </activity>
         <activity android:name=".CameraActivity">
         </activity>
+        <activity android:name=".CameraGLActivity">
+        </activity>
+        <activity android:name=".CameraSurfaceActivity">
+        </activity>
     </application>
 
 </manifest>

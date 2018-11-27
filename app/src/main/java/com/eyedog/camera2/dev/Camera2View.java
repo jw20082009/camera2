@@ -205,14 +205,6 @@ public class Camera2View extends AutoFitTextureView {
         stopBackgroundThread();
     }
 
-    private void startTimerLocked() {
-        mCaptureTimer = SystemClock.elapsedRealtime();
-    }
-
-    private boolean hitTimeoutLocked() {
-        return (SystemClock.elapsedRealtime() - mCaptureTimer) > PRECAPTURE_TIMEOUT_MS;
-    }
-
     protected void openCamera() {
         if (!hasPermissionsGranted(VIDEO_PERMISSIONS)) {
             requestVideoPermissions();
@@ -664,17 +656,17 @@ public class Camera2View extends AutoFitTextureView {
                     // We have nothing to do when the camera preview is running normally.
                     break;
                 }
-                case STATE_WAITING_FOR_3A_CONVERGENCE: {
-                    if (mPendingUserCaptures > 0) {
-                        // Capture once for each user tap of the "Picture" button.
-                        while (mPendingUserCaptures > 0) {
-                            captureStillPictureLocked();
-                            mPendingUserCaptures--;
-                        }
-                        // After this, the camera will go back to the normal state of preview.
-                        mState = STATE_PREVIEW;
-                    }
-                }
+                //case STATE_WAITING_FOR_3A_CONVERGENCE: {
+                //    if (mPendingUserCaptures > 0) {
+                //        // Capture once for each user tap of the "Picture" button.
+                //        while (mPendingUserCaptures > 0) {
+                //            captureStillPictureLocked();
+                //            mPendingUserCaptures--;
+                //        }
+                //        // After this, the camera will go back to the normal state of preview.
+                //        mState = STATE_PREVIEW;
+                //    }
+                //}
             }
         }
 

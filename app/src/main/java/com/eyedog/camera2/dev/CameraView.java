@@ -4,26 +4,17 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Matrix;
+import android.content.res.Configuration;
 import android.graphics.PixelFormat;
-import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.MediaRecorder;
 import android.os.Build;
 import android.support.v4.app.ActivityCompat;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.Surface;
 import android.view.TextureView;
 import com.eyedog.camera2.Constant;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * created by jw200 at 2018/11/16 15:43
@@ -33,7 +24,6 @@ public class CameraView extends AutoFitTextureView {
         Manifest.permission.CAMERA
     };
     private Activity mActivity;
-    private int mDefaultCameraID = -1;
     private int mFacing = 0;
     private static final int REQUEST_VIDEO_PERMISSIONS = 1;
     private Camera mCameraDevice;
@@ -45,7 +35,7 @@ public class CameraView extends AutoFitTextureView {
     private int mPreferPreviewWidth = Constant.OUT_WIDTH;
     private int mPreferPreviewHeight = Constant.OUT_HEIGHT;
     private boolean mIsPreviewing = false;
-    private int mDefaultCameraId = 0;
+    private int mCameraId = 0;
     private final String TAG = "CameraView";
 
     public CameraView(Context context) {
@@ -68,10 +58,17 @@ public class CameraView extends AutoFitTextureView {
 
     public void onResume() {
         if (isAvailable()) {
-            openCamera(mDefaultCameraId);
+            openCamera(mCameraId);
         } else {
             setSurfaceTextureListener(mSurfaceTextureListener);
         }
+    }
+
+    public void toggle() {
+        closeCamera();
+        openCamera(
+            mFacing == Camera.CameraInfo.CAMERA_FACING_BACK ? Camera.CameraInfo.CAMERA_FACING_FRONT
+                : Camera.CameraInfo.CAMERA_FACING_BACK);
     }
 
     public void onPause() {
@@ -79,7 +76,15 @@ public class CameraView extends AutoFitTextureView {
     }
 
     protected void closeCamera() {
-
+        if (mIsPreviewing) {
+            mIsPreviewing = false;
+            if (mCameraDevice != null) {
+                stopPreview();
+                mCameraDevice.setPreviewCallback(null);
+                mCameraDevice.release();
+                mCameraDevice = null;
+            }
+        }
     }
 
     protected TextureView.SurfaceTextureListener mSurfaceTextureListener
@@ -88,7 +93,7 @@ public class CameraView extends AutoFitTextureView {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture,
             int width, int height) {
-            openCamera(mDefaultCameraId);
+            openCamera(mCameraId);
         }
 
         @Override
@@ -119,7 +124,7 @@ public class CameraView extends AutoFitTextureView {
                 for (int i = 0; i < numberOfCameras; i++) {
                     Camera.getCameraInfo(i, cameraInfo);
                     if (cameraInfo.facing == facing) {
-                        mDefaultCameraID = i;
+                        mCameraId = i;
                         mFacing = facing;
                     }
                 }
@@ -128,12 +133,21 @@ public class CameraView extends AutoFitTextureView {
             if (mCameraDevice != null) {
                 mCameraDevice.release();
             }
-            if (mDefaultCameraID >= 0) {
-                mCameraDevice = Camera.open(mDefaultCameraID);
+            if (mCameraId >= 0) {
+                mCameraDevice = Camera.open(mCameraId);
             } else {
                 mCameraDevice = Camera.open();
                 mFacing = Camera.CameraInfo.CAMERA_FACING_BACK; //default: back facing
             }
+            android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+            android.hardware.Camera.getCameraInfo(mCameraId, info);
+            int rotation = info.orientation;
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                rotation = (360 - info.orientation) % 360;
+            } else {
+                rotation = info.orientation % 360;
+            }
+            mCameraDevice.setDisplayOrientation(rotation);
         } catch (Exception e) {
             e.printStackTrace();
             mCameraDevice = null;
@@ -150,63 +164,6 @@ public class CameraView extends AutoFitTextureView {
             return;
         }
         return;
-    }
-
-    private void configureTransform(int viewWidth, int viewHeight) {
-        int rotation =
-            ((Activity) getContext()).getWindowManager().getDefaultDisplay().getRotation();
-        Matrix matrix = new Matrix();
-        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
-        RectF bufferRect = new RectF(0, 0, mPreviewWidth, mPreviewHeight);
-        float centerX = viewRect.centerX();
-        float centerY = viewRect.centerY();
-        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
-            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
-            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
-            float scale = Math.max(
-                (float) viewHeight / mPreviewWidth,
-                (float) viewWidth / mPreviewHeight);
-            matrix.postScale(scale, scale, centerX, centerY);
-            matrix.postRotate(90 * (rotation - 2), centerX, centerY);
-        } else {
-            int previewWidth = mPreviewHeight;
-            int previewHeight = mPreviewWidth;
-            if (previewWidth > previewHeight) {
-                previewWidth = mPreviewWidth;
-                previewHeight = mPreviewHeight;
-            }
-            float previewRatio = 1.0f * previewWidth / previewHeight;
-            float scale = 1.0f;
-            if (viewWidth / previewRatio > viewHeight) {
-                scale = viewWidth / previewRatio / viewHeight;
-            }
-            if (scale != 1.0f) {
-                matrix.setScale(scale, scale, viewRect.centerX(), viewRect.centerY());
-            }
-        }
-        float[] transform = new float[16];
-        getSurfaceTexture().getTransformMatrix(transform);
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < transform.length; i++) {
-            if (i != 0) {
-                stringBuilder.append("*");
-                stringBuilder.append(transform[i]);
-            } else {
-                stringBuilder.append(transform[i]);
-            }
-        }
-        android.util.Log.i(TAG, stringBuilder.toString());
-        setTransform(matrix);
-        stringBuilder = new StringBuilder();
-        for (int i = 0; i < transform.length; i++) {
-            if (i != 0) {
-                stringBuilder.append("*");
-                stringBuilder.append(transform[i]);
-            } else {
-                stringBuilder.append(transform[i]);
-            }
-        }
-        android.util.Log.i(TAG, stringBuilder.toString());
     }
 
     public Camera.Size getPictureSize(List<Camera.Size> list, int picwidth, int picheight) {
@@ -413,14 +370,20 @@ public class CameraView extends AutoFitTextureView {
         mPreviewHeight = szPrev.height;
         mPictureWidth = szPic.width;
         mPictureHeight = szPic.height;
+        int orientation = getResources().getConfiguration().orientation;
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            setAspectRatio(mPreviewWidth, mPreviewHeight);
+        } else {
+            setAspectRatio(mPreviewHeight, mPreviewWidth);
+        }
         startPreview(getSurfaceTexture());
-        configureTransform(getWidth(), getHeight());
     }
 
     public synchronized void startPreview(SurfaceTexture texture) {
         if (mIsPreviewing) {
             return;
         }
+        texture.setDefaultBufferSize(mPreviewWidth, mPreviewHeight);
         if (mCameraDevice != null) {
             try {
                 mCameraDevice.setPreviewTexture(texture);

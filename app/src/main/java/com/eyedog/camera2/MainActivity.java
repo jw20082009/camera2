@@ -6,13 +6,14 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import com.eyedog.camera2.dev.CameraSurfaceView;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private final String TAG = "MainActivity";
-    Button mBtnCamera2, mBtnCamera;
+    Button mBtnCamera2, mBtnCamera, mBtnCameraGL, mBtnCameraSurface;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,6 +23,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBtnCamera2.setOnClickListener(this);
         mBtnCamera = findViewById(R.id.btn_camera);
         mBtnCamera.setOnClickListener(this);
+        mBtnCameraGL = findViewById(R.id.btn_camera_gl);
+        mBtnCameraGL.setOnClickListener(this);
+        mBtnCameraSurface = findViewById(R.id.btn_camera_surface);
+        mBtnCameraSurface.setOnClickListener(this);
         File fileDir = getFilesDir();
         File createFile = new File(fileDir, "test");
         if (!createFile.exists()) {
@@ -52,6 +57,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.btn_camera:
                 startActivity(new Intent(this, CameraActivity.class));
+                break;
+            case R.id.btn_camera_gl:
+                startActivity(new Intent(this, CameraGLActivity.class));
+                break;
+            case R.id.btn_camera_surface:
+                startActivity(new Intent(this, CameraSurfaceActivity.class));
                 break;
         }
     }
