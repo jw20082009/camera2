@@ -12,8 +12,8 @@ import android.view.SurfaceView;
 public class CameraSurfaceView extends SurfaceView
     implements SurfaceHolder.Callback {
 
-    CameraDev cameraDev;
-    boolean isCameraOpened = false, isPreviewing = false, isSurfaceCreated = false;
+    protected CameraDev cameraDev;
+    protected boolean isCameraOpened = false, isPreviewing = false, isSurfaceCreated = false;
 
     public CameraSurfaceView(Context context) {
         this(context, null);
@@ -34,8 +34,12 @@ public class CameraSurfaceView extends SurfaceView
         getHolder().addCallback(this);
     }
 
+    public void toggle() {
+        cameraDev.toggle(mStateCallback);
+    }
+
     public void onResume() {
-        cameraDev.tryOpenCamera(mStateCallback, Camera.CameraInfo.CAMERA_FACING_BACK);
+        cameraDev.tryOpenCamera(mStateCallback, Camera.CameraInfo.CAMERA_FACING_FRONT);
     }
 
     public void onPause() {

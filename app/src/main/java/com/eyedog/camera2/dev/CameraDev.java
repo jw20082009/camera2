@@ -15,7 +15,7 @@ import java.util.List;
  **/
 public class CameraDev {
 
-    int mCameraID = 0;
+    int mCameraID = 1;
     int mFacing = 0;
     boolean mIsPreviewing = false;
     Camera mCameraDevice;
@@ -42,6 +42,10 @@ public class CameraDev {
         tryOpenCamera(callback,
             mFacing == Camera.CameraInfo.CAMERA_FACING_BACK ? Camera.CameraInfo.CAMERA_FACING_FRONT
                 : Camera.CameraInfo.CAMERA_FACING_BACK);
+    }
+
+    public Camera getCameraDevice() {
+        return mCameraDevice;
     }
 
     public synchronized boolean tryOpenCamera(CameraStateCallback callback, int facing) {
